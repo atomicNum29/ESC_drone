@@ -1,69 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Servo.h>
-
-#define CH1 5
-#define CH2 4
-#define CH3 3
-#define CH4 2
-
-volatile int CH1_pulse_width = 0;
-volatile int CH2_pulse_width = 0;
-volatile int CH3_pulse_width = 0;
-volatile int CH4_pulse_width = 0;
-
-void pulsecount1()
-{
-	static unsigned long last_time = 0;
-	unsigned long current_time = micros();
-	if (digitalRead(CH1) == HIGH)
-	{
-		last_time = current_time;
-	}
-	else
-	{
-		CH1_pulse_width = current_time - last_time;
-	}
-}
-void pulsecount2()
-{
-	static unsigned long last_time = 0;
-	unsigned long current_time = micros();
-	if (digitalRead(CH2) == HIGH)
-	{
-		last_time = current_time;
-	}
-	else
-	{
-		CH2_pulse_width = current_time - last_time;
-	}
-}
-void pulsecount3()
-{
-	static unsigned long last_time = 0;
-	unsigned long current_time = micros();
-	if (digitalRead(CH3) == HIGH)
-	{
-		last_time = current_time;
-	}
-	else
-	{
-		CH3_pulse_width = current_time - last_time;
-	}
-}
-void pulsecount4()
-{
-	static unsigned long last_time = 0;
-	unsigned long current_time = micros();
-	if (digitalRead(CH4) == HIGH)
-	{
-		last_time = current_time;
-	}
-	else
-	{
-		CH4_pulse_width = current_time - last_time;
-	}
-}
+#include "recieve_controller.h"
 
 #define ESC_FRONT_LEFT 6
 #define ESC_FRONT_RIGHT 7
@@ -82,14 +20,7 @@ void setup()
 {
 	Serial.begin(115200);
 
-	pinMode(CH1, INPUT_PULLUP);
-	attachInterrupt(digitalPinToInterrupt(CH1), pulsecount1, CHANGE);
-	pinMode(CH2, INPUT_PULLUP);
-	attachInterrupt(digitalPinToInterrupt(CH2), pulsecount2, CHANGE);
-	pinMode(CH3, INPUT_PULLUP);
-	attachInterrupt(digitalPinToInterrupt(CH3), pulsecount3, CHANGE);
-	pinMode(CH4, INPUT_PULLUP);
-	attachInterrupt(digitalPinToInterrupt(CH4), pulsecount4, CHANGE);
+	R9DS_init();
 
 	for (int i = 0; i < numEscs; i++)
 	{
