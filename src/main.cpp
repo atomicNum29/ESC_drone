@@ -25,12 +25,24 @@ void setup()
 {
 	Serial.begin(115200);
 
+	pinMode(LED_BUILTIN, OUTPUT);
+
 	R9DS_init();
 
 	for (int i = 0; i < numEscs; i++)
 	{
 		esc[i].attach(escPins[i], ESC_MIN, ESC_MAX);
+		esc[i].writeMicroseconds(0);
 	}
+
+	while (THROTTLE < 1000)
+	{
+		digitalWrite(LED_BUILTIN, LOW);
+		delay(100);
+		digitalWrite(LED_BUILTIN, HIGH);
+		delay(100);
+	}
+	digitalWrite(LED_BUILTIN, LOW);
 }
 
 void loop()
@@ -56,13 +68,13 @@ void loop()
 	esc[2].writeMicroseconds(esc3_output);
 	esc[3].writeMicroseconds(esc4_output);
 
-	Serial.print("ESC1: ");
-	Serial.print(esc1_output);
-	Serial.print("\tESC2: ");
-	Serial.print(esc2_output);
-	Serial.print("\tESC3: ");
-	Serial.print(esc3_output);
-	Serial.print("\tESC4: ");
-	Serial.print(esc4_output);
-	Serial.println();
+	// Serial.print("ESC1: ");
+	// Serial.print(esc1_output);
+	// Serial.print("\tESC2: ");
+	// Serial.print(esc2_output);
+	// Serial.print("\tESC3: ");
+	// Serial.print(esc3_output);
+	// Serial.print("\tESC4: ");
+	// Serial.print(esc4_output);
+	// Serial.println();
 }
