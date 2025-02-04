@@ -99,15 +99,33 @@ void loop()
 		}
 	}
 
+	// === 목표 자세 (조종기 입력) ===
 	int throttle = map(THROTTLE, 1000, 2000, 1000, 2000);
-	int roll = map(ROLL, 1000, 2000, -500, 500); // 조정 가능한 범위
-	int pitch = map(PITCH, 1000, 2000, -500, 500);
-	int yaw = map(YAW, 1000, 2000, -500, 500);
+	int roll = map(ROLL, 1000, 2000, -10, 10); // 조정 가능한 범위
+	int pitch = map(PITCH, 1000, 2000, -10, 10);
+	int yaw = map(YAW, 1000, 2000, -10, 10);
 
-	int esc1_output = throttle + pitch + roll - yaw;
-	int esc2_output = throttle + pitch - roll + yaw;
-	int esc3_output = throttle - pitch - roll - yaw;
-	int esc4_output = throttle - pitch + roll + yaw;
+	float targetPitch = pitch; // 조종기로 설정
+	float targetRoll = roll;
+	float targetYaw = yaw;
+
+	float pitchError = targetPitch - filter.getPitch();
+	float rollError = targetRoll - filter.getRoll();
+
+	// === 비례 게인 (조정 필요) ===
+	float Kp_pitch = 20;
+	float Kp_roll = 20;
+	float Kp_yaw = 50;
+
+	// === 제어 신호 ===
+	float controlPitch = Kp_pitch * pitchError;
+	float controlRoll = Kp_roll * rollError;
+	float controlYaw = Kp_yaw * targetYaw;
+
+	int esc1_output = throttle + controlPitch + controlRoll - controlYaw;
+	int esc2_output = throttle + controlPitch - controlRoll + controlYaw;
+	int esc3_output = throttle - controlPitch - controlRoll - controlYaw;
+	int esc4_output = throttle - controlPitch + controlRoll + controlYaw;
 
 	// PWM 값 제한 (1000~2000us)
 	esc1_output = constrain(esc1_output, 1000, 2000);
@@ -120,13 +138,13 @@ void loop()
 	esc[2].writeMicroseconds(esc3_output);
 	esc[3].writeMicroseconds(esc4_output);
 
-	// Serial.print("ESC1: ");
-	// Serial.print(esc1_output);
-	// Serial.print("\tESC2: ");
-	// Serial.print(esc2_output);
-	// Serial.print("\tESC3: ");
-	// Serial.print(esc3_output);
-	// Serial.print("\tESC4: ");
-	// Serial.print(esc4_output);
-	// Serial.println();
+	Serial.print("ESC1: ");
+	Serial.print(esc1_output);
+	Serial.print("\tESC2: ");
+	Serial.print(esc2_output);
+	Serial.print("\tESC3: ");
+	Serial.print(esc3_output);
+	Serial.print("\tESC4: ");
+	Serial.print(esc4_output);
+	Serial.println();
 }
