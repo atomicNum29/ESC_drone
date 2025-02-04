@@ -1,12 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <Servo.h>
-#include "recieve_controller.h"
 
-#define THROTTLE CH3_pulse_width
-#define YAW CH4_pulse_width
-#define PITCH CH2_pulse_width
-#define ROLL CH1_pulse_width
+// for motor control
+#include <Servo.h>
 
 #define ESC_FRONT_LEFT 6
 #define ESC_FRONT_RIGHT 7
@@ -21,11 +17,31 @@ Servo esc[4];
 const int escPins[] = {ESC_FRONT_LEFT, ESC_FRONT_RIGHT, ESC_BACK_RIGHT, ESC_BACK_LEFT};
 const int numEscs = 4;
 
+// for radio control
+#include "recieve_controller.h"
+#define THROTTLE CH3_pulse_width
+#define YAW CH4_pulse_width
+#define PITCH CH2_pulse_width
+#define ROLL CH1_pulse_width
+
+// for IMU
+#include <Arduino_BMI270_BMM150.h>
+#include <MadgwickAHRS.h>
+
+Madgwick filter;
+unsigned long microsPerReading, microsPrevious;
+
 void setup()
 {
 	Serial.begin(115200);
 
 	pinMode(LED_BUILTIN, OUTPUT);
+	digitalWrite(LED_BUILTIN, HIGH);
+
+	IMU.begin();
+	filter.begin(IMU.gyroscopeSampleRate());
+	microsPerReading = 1000000 / IMU.gyroscopeSampleRate();
+	microsPrevious = micros();
 
 	R9DS_init();
 
@@ -47,6 +63,42 @@ void setup()
 
 void loop()
 {
+	float ax, ay, az;
+	float gx, gy, gz;
+	float AX, AY, AZ;
+	float GX, GY, GZ;
+	unsigned long microsNow;
+
+	microsNow = micros();
+	if (microsNow - microsPrevious >= microsPerReading)
+	{
+		if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable())
+		{
+			IMU.readAcceleration(ax, ay, az);
+			IMU.readGyroscope(gx, gy, gz);
+			AX = ay;
+			AY = -ax;
+			AZ = az;
+			GX = -gy;
+			GY = gx;
+			GZ = -gz;
+
+			filter.updateIMU(GX, GY, GZ, AX, AY, AZ);
+
+			// roll = filter.getRoll();
+			// pitch = filter.getPitch();
+			// heading = filter.getYaw();
+			// Serial.print("Roll: ");
+			// Serial.print(roll);
+			// Serial.print("\tPitch: ");
+			// Serial.print(pitch);
+			// Serial.print("\tHeading: ");
+			// Serial.println(heading);
+
+			microsPrevious = microsPrevious + microsPerReading;
+		}
+	}
+
 	int throttle = map(THROTTLE, 1000, 2000, 1000, 2000);
 	int roll = map(ROLL, 1000, 2000, -500, 500); // 조정 가능한 범위
 	int pitch = map(PITCH, 1000, 2000, -500, 500);
