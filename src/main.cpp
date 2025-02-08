@@ -18,11 +18,8 @@ const int escPins[] = {ESC_FRONT_LEFT, ESC_FRONT_RIGHT, ESC_BACK_RIGHT, ESC_BACK
 const int numEscs = 4;
 
 // for radio control
-#include "recieve_controller.h"
-#define THROTTLE CH3_pulse_width
-#define YAW CH4_pulse_width
-#define PITCH CH2_pulse_width
-#define ROLL CH1_pulse_width
+#include "recieve_controller.hpp"
+RecieveController rc;
 
 // for IMU
 #include <Arduino_BMI270_BMM150.h>
@@ -43,7 +40,7 @@ void setup()
 	microsPerReading = 1000000 / IMU.gyroscopeSampleRate();
 	microsPrevious = micros();
 
-	R9DS_init();
+	rc.begin();
 
 	for (int i = 0; i < numEscs; i++)
 	{
@@ -51,7 +48,7 @@ void setup()
 		esc[i].writeMicroseconds(0);
 	}
 
-	while (THROTTLE < 1000)
+	while (rc.getThrottle() < 1000)
 	{
 		digitalWrite(LED_BUILTIN, LOW);
 		delay(100);
@@ -100,10 +97,10 @@ void loop()
 	}
 
 	// === 목표 자세 (조종기 입력) ===
-	int throttle = map(THROTTLE, 1000, 2000, 1000, 2000);
-	int roll = map(ROLL, 1000, 2000, -10, 10); // 조정 가능한 범위
-	int pitch = map(PITCH, 1000, 2000, -10, 10);
-	int yaw = map(YAW, 1000, 2000, -10, 10);
+	int throttle = map(rc.getThrottle(), 1000, 2000, 1000, 2000);
+	int roll = map(rc.getRoll(), 1000, 2000, -50, 50); // 조정 가능한 범위
+	int pitch = map(rc.getPitch(), 1000, 2000, -50, 50);
+	int yaw = map(rc.getYaw(), 1000, 2000, -50, 50);
 
 	float targetPitch = pitch; // 조종기로 설정
 	float targetRoll = roll;
@@ -138,13 +135,21 @@ void loop()
 	esc[2].writeMicroseconds(esc3_output);
 	esc[3].writeMicroseconds(esc4_output);
 
-	Serial.print("ESC1: ");
+	Serial.print(">Throttle:");
+	Serial.print(throttle);
+	Serial.print(",\tRoll:");
+	Serial.print(roll);
+	Serial.print(",\tPitch:");
+	Serial.print(pitch);
+	Serial.print(",\tYaw:");
+	Serial.print(yaw);
+	Serial.print(",\tESC1:");
 	Serial.print(esc1_output);
-	Serial.print("\tESC2: ");
+	Serial.print(",\tESC2:");
 	Serial.print(esc2_output);
-	Serial.print("\tESC3: ");
+	Serial.print(",\tESC3:");
 	Serial.print(esc3_output);
-	Serial.print("\tESC4: ");
+	Serial.print(",\tESC4:");
 	Serial.print(esc4_output);
-	Serial.println();
+	Serial.print("\r\n");
 }
