@@ -18,8 +18,8 @@ const int escPins[] = {ESC_FRONT_LEFT, ESC_FRONT_RIGHT, ESC_BACK_RIGHT, ESC_BACK
 const int numEscs = 4;
 
 // for radio control
-#include "recieve_controller.hpp"
-RecieveController rc;
+#include "Receiver.hpp"
+Receiver rc;
 
 // for IMU
 #include <Arduino_BMI270_BMM150.h>

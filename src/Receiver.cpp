@@ -1,15 +1,15 @@
-#include "recieve_controller.hpp"
+#include "Receiver.hpp"
 
-int RecieveController::CH1 = 0;
-int RecieveController::CH2 = 0;
-int RecieveController::CH3 = 0;
-int RecieveController::CH4 = 0;
-volatile int RecieveController::CH1_pulse_width = 0;
-volatile int RecieveController::CH2_pulse_width = 0;
-volatile int RecieveController::CH3_pulse_width = 0;
-volatile int RecieveController::CH4_pulse_width = 0;
+int Receiver::CH1 = 0;
+int Receiver::CH2 = 0;
+int Receiver::CH3 = 0;
+int Receiver::CH4 = 0;
+volatile int Receiver::CH1_pulse_width = 0;
+volatile int Receiver::CH2_pulse_width = 0;
+volatile int Receiver::CH3_pulse_width = 0;
+volatile int Receiver::CH4_pulse_width = 0;
 
-void RecieveController::pulseIn1()
+void Receiver::pulseIn1()
 {
 	static unsigned long last_time = 0;
 	unsigned long current_time = micros();
@@ -22,7 +22,7 @@ void RecieveController::pulseIn1()
 		CH1_pulse_width = current_time - last_time;
 	}
 }
-void RecieveController::pulseIn2()
+void Receiver::pulseIn2()
 {
 	static unsigned long last_time = 0;
 	unsigned long current_time = micros();
@@ -35,7 +35,7 @@ void RecieveController::pulseIn2()
 		CH2_pulse_width = current_time - last_time;
 	}
 }
-void RecieveController::pulseIn3()
+void Receiver::pulseIn3()
 {
 	static unsigned long last_time = 0;
 	unsigned long current_time = micros();
@@ -48,7 +48,7 @@ void RecieveController::pulseIn3()
 		CH3_pulse_width = current_time - last_time;
 	}
 }
-void RecieveController::pulseIn4()
+void Receiver::pulseIn4()
 {
 	static unsigned long last_time = 0;
 	unsigned long current_time = micros();
@@ -62,7 +62,7 @@ void RecieveController::pulseIn4()
 	}
 }
 
-RecieveController::RecieveController(int ch1, int ch2, int ch3, int ch4)
+Receiver::Receiver(int ch1, int ch2, int ch3, int ch4)
 {
 	CH1 = ch1;
 	CH2 = ch2;
@@ -74,7 +74,7 @@ RecieveController::RecieveController(int ch1, int ch2, int ch3, int ch4)
 	CH4_pulse_width = 0;
 }
 
-void RecieveController::begin()
+void Receiver::begin()
 {
 	pinMode(CH1, INPUT);
 	pinMode(CH2, INPUT);
@@ -86,22 +86,22 @@ void RecieveController::begin()
 	attachInterrupt(digitalPinToInterrupt(CH4), pulseIn4, CHANGE);
 }
 
-int RecieveController::getThrottle()
+int Receiver::getThrottle()
 {
 	return CH3_pulse_width;
 }
 
-int RecieveController::getRoll()
+int Receiver::getRoll()
 {
 	return CH1_pulse_width;
 }
 
-int RecieveController::getPitch()
+int Receiver::getPitch()
 {
 	return CH2_pulse_width;
 }
 
-int RecieveController::getYaw()
+int Receiver::getYaw()
 {
 	return CH4_pulse_width;
 }
