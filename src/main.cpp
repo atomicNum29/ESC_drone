@@ -22,11 +22,8 @@ const int numEscs = 4;
 Receiver rc;
 
 // for IMU
-#include <Arduino_BMI270_BMM150.h>
-#include <MadgwickAHRS.h>
-
-Madgwick filter;
-unsigned long microsPerReading, microsPrevious;
+#include "IMUMadgwickFilter.hpp"
+IMUMadgwickFilter filter;
 
 void setup()
 {
@@ -35,12 +32,9 @@ void setup()
 	pinMode(LED_BUILTIN, OUTPUT);
 	digitalWrite(LED_BUILTIN, HIGH);
 
-	IMU.begin();
-	filter.begin(IMU.gyroscopeSampleRate());
-	microsPerReading = 1000000 / IMU.gyroscopeSampleRate();
-	microsPrevious = micros();
+	rc.begin(); // radio control
 
-	rc.begin();
+	filter.begin(); // IMU
 
 	for (int i = 0; i < numEscs; i++)
 	{
@@ -60,41 +54,7 @@ void setup()
 
 void loop()
 {
-	float ax, ay, az;
-	float gx, gy, gz;
-	float AX, AY, AZ;
-	float GX, GY, GZ;
-	unsigned long microsNow;
-
-	microsNow = micros();
-	if (microsNow - microsPrevious >= microsPerReading)
-	{
-		if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable())
-		{
-			IMU.readAcceleration(ax, ay, az);
-			IMU.readGyroscope(gx, gy, gz);
-			AX = ay;
-			AY = -ax;
-			AZ = az;
-			GX = -gy;
-			GY = gx;
-			GZ = -gz;
-
-			filter.updateIMU(GX, GY, GZ, AX, AY, AZ);
-
-			// roll = filter.getRoll();
-			// pitch = filter.getPitch();
-			// heading = filter.getYaw();
-			// Serial.print("Roll: ");
-			// Serial.print(roll);
-			// Serial.print("\tPitch: ");
-			// Serial.print(pitch);
-			// Serial.print("\tHeading: ");
-			// Serial.println(heading);
-
-			microsPrevious = microsPrevious + microsPerReading;
-		}
-	}
+	filter.update();
 
 	// === 목표 자세 (조종기 입력) ===
 	int throttle = map(rc.getThrottle(), 1000, 2000, 1000, 2000);
