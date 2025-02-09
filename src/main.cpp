@@ -1,29 +1,27 @@
 #include <Arduino.h>
-#include <Wire.h>
 
-// for motor control
-#include <Servo.h>
+// GPIO pins
+#define RECEIVER_CH1 5
+#define RECEIVER_CH2 4
+#define RECEIVER_CH3 3
+#define RECEIVER_CH4 2
 
 #define ESC_FRONT_LEFT 6
 #define ESC_FRONT_RIGHT 7
-#define ESC_BACK_RIGHT 8
-#define ESC_BACK_LEFT 9
-
-#define ESC_MIN 1000
-#define ESC_MAX 2000
-
-Servo esc[4];
-// Pins connected to ESCs
-const int escPins[] = {ESC_FRONT_LEFT, ESC_FRONT_RIGHT, ESC_BACK_RIGHT, ESC_BACK_LEFT};
-const int numEscs = 4;
+#define ESC_REAR_RIGHT 8
+#define ESC_REAR_LEFT 9
 
 // for radio control
 #include "Receiver.hpp"
-Receiver rc;
+Receiver rc(RECEIVER_CH1, RECEIVER_CH2, RECEIVER_CH3, RECEIVER_CH4);
 
 // for IMU
 #include "IMUMadgwickFilter.hpp"
 IMUMadgwickFilter filter;
+
+// for motor control
+#include "QuadESCManager.hpp"
+QuadESCManager qesc(ESC_FRONT_LEFT, ESC_FRONT_RIGHT, ESC_REAR_RIGHT, ESC_REAR_LEFT);
 
 void setup()
 {
@@ -36,13 +34,10 @@ void setup()
 
 	filter.begin(); // IMU
 
-	for (int i = 0; i < numEscs; i++)
-	{
-		esc[i].attach(escPins[i], ESC_MIN, ESC_MAX);
-		esc[i].writeMicroseconds(0);
-	}
+	qesc.begin(); // motor control
 
-	while (rc.getThrottle() < 1000)
+	// wait for the throttle signal to be in the range of 1000~1200us for safety
+	while (rc.getThrottle() < 1000 || rc.getThrottle() > 1200)
 	{
 		digitalWrite(LED_BUILTIN, LOW);
 		delay(100);
@@ -90,26 +85,11 @@ void loop()
 	esc3_output = constrain(esc3_output, 1000, 2000);
 	esc4_output = constrain(esc4_output, 1000, 2000);
 
-	esc[0].writeMicroseconds(esc1_output);
-	esc[1].writeMicroseconds(esc2_output);
-	esc[2].writeMicroseconds(esc3_output);
-	esc[3].writeMicroseconds(esc4_output);
+	qesc.write(esc1_output, esc2_output, esc3_output, esc4_output);
 
-	Serial.print(">Throttle:");
-	Serial.print(throttle);
-	Serial.print(",\tRoll:");
-	Serial.print(roll);
-	Serial.print(",\tPitch:");
-	Serial.print(pitch);
-	Serial.print(",\tYaw:");
-	Serial.print(yaw);
-	Serial.print(",\tESC1:");
-	Serial.print(esc1_output);
-	Serial.print(",\tESC2:");
-	Serial.print(esc2_output);
-	Serial.print(",\tESC3:");
-	Serial.print(esc3_output);
-	Serial.print(",\tESC4:");
-	Serial.print(esc4_output);
-	Serial.print("\r\n");
+	char buffer[400];
+	sprintf(buffer,
+			">CH3: %4d, CH1: %3d, CH2: %3d, CH4: %3d, Roll: %5.1f, Pitch: %5.1f, Yaw: %5.1f, ESC1: %4d, ESC2: %4d, ESC3: %4d, ESC4: %4d\r\n",
+			throttle, roll, pitch, yaw, filter.getRoll(), filter.getPitch(), filter.getYaw(), esc1_output, esc2_output, esc3_output, esc4_output);
+	Serial.print(buffer);
 }
