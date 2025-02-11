@@ -19,6 +19,13 @@ Receiver rc(RECEIVER_CH1, RECEIVER_CH2, RECEIVER_CH3, RECEIVER_CH4);
 #include "IMUMadgwickFilter.hpp"
 IMUMadgwickFilter filter;
 
+// for PID control
+#include <PID_v1.h>
+double rollSetpoint, rollInput, rollOutput;
+PID rollPID(&rollInput, &rollOutput, &rollSetpoint, 2, 5, 1, DIRECT);
+double pitchSetpoint, pitchInput, pitchOutput;
+PID pitchPID(&pitchInput, &pitchOutput, &pitchSetpoint, 2, 5, 1, DIRECT);
+
 // for motor control
 #include "QuadESCManager.hpp"
 QuadESCManager qesc(ESC_FRONT_LEFT, ESC_FRONT_RIGHT, ESC_REAR_RIGHT, ESC_REAR_LEFT);
@@ -33,6 +40,13 @@ void setup()
 	rc.begin(); // radio control
 
 	filter.begin(); // IMU
+
+	rollPID.SetMode(AUTOMATIC);
+	rollPID.SetOutputLimits(-50, 50);
+	rollPID.SetSampleTime(10); // 10ms
+	pitchPID.SetMode(AUTOMATIC);
+	pitchPID.SetOutputLimits(-50, 50);
+	pitchPID.SetSampleTime(10); // 10ms
 
 	qesc.begin(); // motor control
 
@@ -57,27 +71,18 @@ void loop()
 	int pitch = map(rc.getPitch(), 1000, 2000, -50, 50);
 	int yaw = map(rc.getYaw(), 1000, 2000, -50, 50);
 
-	float targetPitch = pitch; // 조종기로 설정
-	float targetRoll = roll;
-	float targetYaw = yaw;
+	rollSetpoint = roll;
+	pitchSetpoint = pitch;
+	rollInput = filter.getRoll();
+	pitchInput = filter.getPitch();
 
-	float pitchError = targetPitch - filter.getPitch();
-	float rollError = targetRoll - filter.getRoll();
+	rollPID.Compute();
+	pitchPID.Compute();	
 
-	// === 비례 게인 (조정 필요) ===
-	float Kp_pitch = 20;
-	float Kp_roll = 20;
-	float Kp_yaw = 50;
-
-	// === 제어 신호 ===
-	float controlPitch = Kp_pitch * pitchError;
-	float controlRoll = Kp_roll * rollError;
-	float controlYaw = Kp_yaw * targetYaw;
-
-	int esc1_output = throttle + controlPitch + controlRoll - controlYaw;
-	int esc2_output = throttle + controlPitch - controlRoll + controlYaw;
-	int esc3_output = throttle - controlPitch - controlRoll - controlYaw;
-	int esc4_output = throttle - controlPitch + controlRoll + controlYaw;
+	int esc1_output = throttle + pitchOutput + rollOutput - yaw;
+	int esc2_output = throttle + pitchOutput - rollOutput + yaw;
+	int esc3_output = throttle - pitchOutput - rollOutput - yaw;
+	int esc4_output = throttle - pitchOutput + rollOutput + yaw;
 
 	// PWM 값 제한 (1000~2000us)
 	esc1_output = constrain(esc1_output, 1000, 2000);
